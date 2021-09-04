@@ -21,3 +21,15 @@ add ssh-key if not present
 ssh-add ~/.ssh/<your_key>
 ```
 
+## 3. Add target host to `inventories/inventory`
+
+```
+[dev_hosts]
+test_srv
+```
+
+## 4. Run dev env provision
+
+```bash
+ansible-playbook playbook.yml
+```
