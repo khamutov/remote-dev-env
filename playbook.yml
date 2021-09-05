@@ -32,6 +32,7 @@
           - stow
           - tmux
           - zsh
+          - htop
         update_cache: yes
         state: latest
 
@@ -46,6 +47,11 @@
         name:
           - bat
           - ripgrep
+
+    - name: create user bin directory
+      ansible.builtin.file:
+        path: "{{ ansible_env.HOME }}/bin/"
+        state: directory
 
     - name: make alias for bat
       ansible.builtin.file:
