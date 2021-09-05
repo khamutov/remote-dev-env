@@ -1,0 +1,3 @@
+- name: Install the correct web server for Debian
+  import_tasks: ubuntu.yml
+  when: ansible_facts['distribution']|lower == 'ubuntu'

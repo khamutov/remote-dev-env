@@ -1,0 +1,7 @@
+- name: "Install nvtop"
+  become: yes
+  apt:
+    name:
+      - nvtop
+    update_cache: yes
+    state: latest

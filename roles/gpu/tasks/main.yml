@@ -1,0 +1,9 @@
+- name: Include nvidia driver
+  include_role:
+    name: nvidia.nvidia_driver
+    apply:
+      become: yes
+
+- name: Install nvtop for Ubuntu
+  import_tasks: ubuntu.yml
+  when: ansible_facts['distribution']|lower == 'ubuntu'

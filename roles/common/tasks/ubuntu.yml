@@ -1,0 +1,191 @@
+- name: Ensure en_US.UTF-8 the locale exists
+  become: yes
+  locale_gen:
+    name: en_US.UTF-8
+    state: present
+- name: Set en_US.UTF-8 as default locale
+  become: yes
+  blockinfile:
+    path: /etc/environment
+    block: |
+      LC_ALL=en_US.UTF-8
+      LANG=en_US.UTF-8
+
+- name: "Install system packages"
+  become: yes
+  apt:
+    name:
+      - vim
+      # - exa
+      - git
+      - stow
+      - tmux
+      - zsh
+      - htop
+    update_cache: yes
+    state: latest
+
+# bug with ubuntu and rust build
+# fixed in ubuntu 20.10
+# https://askubuntu.com/questions/1290262/unable-to-install-bat-error-trying-to-overwrite-usr-crates2-json-which
+- name: "Install rust apt deps (BUG in ubuntu before 20.10)"
+  become: yes
+  apt:
+    update_cache: yes
+    dpkg_options: 'force-overwrite'
+    name:
+      - bat
+      - ripgrep
+
+- name: create user bin directory
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/bin/"
+    state: directory
+
+- name: make alias for bat
+  ansible.builtin.file:
+    src: "/usr/bin/batcat"
+    dest: "{{ ansible_env.HOME }}/bin/bat"
+    state: link
+
+- name: "Install build deps"
+  become: yes
+  apt:
+    name:
+      - make
+      - build-essential
+      - libssl-dev
+      - zlib1g-dev
+      - libbz2-dev
+      - libreadline-dev
+      - libsqlite3-dev
+      - wget
+      - curl
+      - llvm
+      - libncursesw5-dev
+      - xz-utils
+      - tk-dev
+      - libxml2-dev
+      - libxmlsec1-dev
+      - libffi-dev
+      - liblzma-dev
+    update_cache: yes
+    state: latest
+
+- name: Install dotfiles
+  git:
+    accept_hostkey: yes
+    repo: git@github.com:khamutov/dotfiles.git
+    dest: "{{ ansible_env.HOME }}/dotfiles"
+
+- name: vim dotfiles
+  stow:
+    state: present
+    package: vim
+    dir: "{{ ansible_env.HOME }}/dotfiles"
+    target: "$HOME"
+
+# Git config
+# diff-so-fancy
+- name: "Add diff-so-fancy ppa"
+  become: yes
+  ansible.builtin.apt_repository:
+    repo: "ppa:aos1/diff-so-fancy"
+
+- name: "Install diff-so-fancy"
+  become: yes
+  apt:
+    name:
+      - diff-so-fancy
+    update_cache: yes
+    state: latest
+
+- name: "Stow git config"
+  stow:
+    state: present
+    package: git
+    dir: "{{ ansible_env.HOME }}/dotfiles"
+    target: "$HOME"
+
+
+# Install zsh with deps
+# hstr
+- name: "Add hstr ppa"
+  become: yes
+  ansible.builtin.apt_repository:
+    repo: 'ppa:ultradvorka/ppa'
+
+- name: "Install hstr"
+  become: yes
+  apt:
+    name:
+      - hstr
+    update_cache: yes
+    state: latest
+
+# prezto
+- name: Install zsh + prezto
+  git:
+    repo: https://github.com/sorin-ionescu/prezto.git
+    recursive: yes
+    dest: "{{ ansible_env.HOME }}/.zprezto"
+
+# zshmarks
+- name: clone zshmarks
+  git:
+    repo: https://github.com/jocelynmallon/zshmarks.git
+    dest: "{{ ansible_env.HOME }}/bin/zshmarks"
+
+- name: symlink zshmarks to zsh
+  ansible.builtin.file:
+    src: "{{ ansible_env.HOME }}/bin/zshmarks"
+    dest: "{{ ansible_env.HOME }}/.zprezto/modules/zshmarks"
+    state: link
+
+- name: zsh dotfiles
+  stow:
+    state: present
+    package: zsh
+    dir: "{{ ansible_env.HOME }}/dotfiles"
+    target: "$HOME"
+
+- name: change user shell to zsh
+  become: yes
+  user:
+    name: "{{ user }}"
+    shell: /bin/zsh
+
+# Install python env
+- name: Install pyenv
+  git:
+    repo: https://github.com/yyuu/pyenv.git
+    dest: "{{ ansible_env.HOME }}/.pyenv"
+    version: v2.0.6
+
+# Install golang
+- name: create directories
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/golang"
+    state: directory
+
+- name: download golang archve
+  get_url:
+    url: https://golang.org/dl/go1.17.linux-amd64.tar.gz
+    dest: "{{ ansible_env.HOME }}/golang/go1.17.linux-amd64.tar.gz"
+
+- name: create directories for go1.17
+  ansible.builtin.file:
+    path: "{{ ansible_env.HOME }}/golang/go1.17"
+    state: directory
+
+- name: unpack archive
+  ansible.builtin.unarchive:
+    src: "{{ ansible_env.HOME }}/golang/go1.17.linux-amd64.tar.gz"
+    dest: "{{ ansible_env.HOME }}/golang/go1.17"
+    remote_src: yes
+
+- name: symlink golang directory
+  ansible.builtin.file:
+    src: "{{ ansible_env.HOME }}/golang/go1.17/go"
+    dest: "{{ ansible_env.HOME }}/golang/go"
+    state: link
