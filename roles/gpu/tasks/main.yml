@@ -3,6 +3,9 @@
     name: nvidia.nvidia_driver
     apply:
       become: yes
+  vars:
+    nvidia_driver_ubuntu_install_from_cuda_repo: yes
+    nvidia_driver_ubuntu_branch: 460
 
 - name: Install nvtop for Ubuntu
   import_tasks: ubuntu.yml
